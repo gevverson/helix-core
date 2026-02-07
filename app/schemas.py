@@ -1,20 +1,62 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, EmailStr
+from uuid import UUID
 from typing import Optional, List
-from app.domain.models import BloodGroup, Genotype, RiskLevel
 
-# 1. Input Schema (What the Mobile App sends us)
-class BioProfileCreate(BaseModel):
-    blood_group: BloodGroup
-    genotype: Genotype
-    rhesus_factor: str  # We will parse this logic in the backend
+# --- 1. BIOLOGICAL PROFILE ---
+class BiologicalProfileBase(BaseModel):
+    blood_group: str | None = None
+    genotype: str | None = None
+    rhesus_factor: str | None = None
 
-# 2. Match Request Schema (Two people to check)
+class BiologicalProfileCreate(BiologicalProfileBase):
+    pass
+
+class BiologicalProfile(BiologicalProfileBase):
+    id: UUID  # <--- FIXED: Changed from 'int' to 'UUID'
+    
+    class Config:
+        from_attributes = True
+
+# --- 2. USERS ---
+class UserBase(BaseModel):
+    email: EmailStr
+
+class UserCreate(UserBase):
+    full_name: str
+    password: str
+    bio_profile: BiologicalProfileCreate
+
+class UserResponse(UserBase):
+    id: UUID
+    is_verified: bool
+    bio_profile: BiologicalProfile | None = None 
+
+    class Config:
+        from_attributes = True
+
+# --- 3. AUTHENTICATION ---
+class Token(BaseModel):
+    access_token: str
+    token_type: str
+
+class TokenData(BaseModel):
+    email: str | None = None
+
+class GoogleLoginRequest(BaseModel):
+    token: str
+
+# --- 4. MATCHING ---
 class MatchRequest(BaseModel):
-    male_profile: BioProfileCreate
-    female_profile: BioProfileCreate
+    male_profile: BiologicalProfileBase
+    female_profile: BiologicalProfileBase
 
-# 3. Output Schema (What we send back)
 class MatchResponse(BaseModel):
-    status: RiskLevel
+    status: str
     messages: List[str]
     can_unblur_photos: bool
+
+# --- 5. UPDATES ---
+class ProfileUpdate(BaseModel):
+    blood_group: str | None = None
+    genotype: str | None = None
+    rhesus_factor: str | None = None

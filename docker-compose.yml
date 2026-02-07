@@ -1,14 +1,34 @@
+version: '3.8'
+
 services:
+  # 1. The Brain (FastAPI Backend)
+  api:
+    build: .
+    container_name: helix_api
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/app  # Live updates (so you don't have to rebuild every time you code)
+    environment:
+      - DATABASE_URL=postgresql://user:password@db:5432/helix_db
+      - SECRET_KEY=your_secret_key_here
+    depends_on:
+      - db
+    restart: always
+
+  # 2. The Vault (Postgres Database)
   db:
     image: postgres:15
-    volumes:
-      - postgres_data:/var/lib/postgresql/data/
+    container_name: helix_db
     environment:
-      - POSTGRES_USER=helix_admin
-      - POSTGRES_PASSWORD=biological_secrecy_key
-      - POSTGRES_DB=helix_core_db
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: helix_db
     ports:
       - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: always
 
 volumes:
   postgres_data:
